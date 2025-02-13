@@ -1,8 +1,10 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
 import speech_recognition as sr
 import sys
+import datetime
 
 class VoiceAttendanceApp:
     def __init__(self, root):
@@ -105,6 +107,7 @@ class VoiceAttendanceApp:
 
         tk.Button(self.attendance_frame, text="Mark Attendance (Voice)", command=self.mark_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=0, column=0, padx=20, pady=20)
         tk.Button(self.attendance_frame, text="Add Student", command=self.show_add_student_page, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
+        tk.Button(self.attendance_frame, text="View Attendance", command=self.view_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
         
         tk.Button(self.root, text="Logout", command=self.show_login_page, bg="#ff0000", fg="white", font=("Arial", 16)).place(relx=1, rely=0.0, anchor="ne")
 
@@ -122,16 +125,20 @@ class VoiceAttendanceApp:
                 student = self.cursor.fetchone()
 
                 if student:
-                    self.cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, DATE('now'), TIME('now'))", (student_name,))
+                    current_date = datetime.now().strftime("%Y-%m-%d")
+                    current_time = datetime.now().strftime("%H:%M:%S")  # Get system time
+
+                    self.cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)", 
+                                        (student_name, current_date, current_time))
                     self.conn.commit()
-                    messagebox.showinfo("Success", f"Attendance marked for {student_name}!")
+                    messagebox.showinfo("Success", f"Attendance marked for {student_name} at {current_time}!")
                 else:
                     messagebox.showerror("Error", "Name not found in the system.")
             except sr.UnknownValueError:
                 messagebox.showerror("Error", "Could not understand voice input.")
             except sr.RequestError:
                 messagebox.showerror("Error", "Could not connect to voice recognition service.")
-
+        
     def show_add_student_page(self):
         """ Displays a page to add new students """
         self.clear_root()
@@ -164,6 +171,25 @@ class VoiceAttendanceApp:
             self.show_main_page()
         except sqlite3.IntegrityError:
             messagebox.showerror("Error", "Student already exists.")
+    
+    def view_attendance(self):
+        self.clear_root()
+
+        self.header_label = tk.Label(self.root, text="Attendance Records", font=("Calibri", 35, "bold"), bg="#e85e38", fg="#ffffff")
+        self.header_label.place(relx=0.5, rely=0.0, anchor="n")
+
+        self.attendance_table = ttk.Treeview(self.root, columns=("Name", "Date", "Time"), show="headings")
+        self.attendance_table.heading("Name", text="Name")
+        self.attendance_table.heading("Date", text="Date")
+        self.attendance_table.heading("Time", text="Time")
+
+        self.attendance_table.place(relx=0.5, rely=0.5, anchor="center")
+
+        self.cursor.execute("SELECT name, date, time FROM attendance")
+        for row in self.cursor.fetchall():
+            self.attendance_table.insert("", "end", values=row)
+
+        tk.Button(self.root, text="Back", command=self.show_main_page, bg="#3c91e6", fg="white", font=("Arial", 14)).place(relx=0.5, rely=0.9, anchor="center")
 
     def clear_root(self):
         """ Clears all widgets from the root window """
