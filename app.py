@@ -1,95 +1,176 @@
 import tkinter as tk
 from tkinter import messagebox
-import speech_recognition as sr
 import sqlite3
-from datetime import datetime
+import speech_recognition as sr
+import sys
 
-# Database Setup
-def initialize_db():
-    conn = sqlite3.connect("attendance.db")
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS attendance (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT,
-                        date TEXT,
-                        time TEXT
-                      )''')
-    conn.commit()
-    conn.close()
+class VoiceAttendanceApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Voice-Assisted Attendance")
+        self.root.attributes("-fullscreen", True)
+        self.root.configure(bg="#1e1f26")
 
-# Record Attendance
-def record_attendance(name):
-    conn = sqlite3.connect("attendance.db")
-    cursor = conn.cursor()
-    now = datetime.now()
-    date = now.strftime("%Y-%m-%d")
-    time = now.strftime("%H:%M:%S")
-    cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)", (name, date, time))
-    conn.commit()
-    conn.close()
-    messagebox.showinfo("Success", f"Attendance marked for {name}")
+        self.root.bind("<Escape>", self.exit_app)
 
-# Voice Recognition
-def recognize_voice():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
+        self.conn = sqlite3.connect("attendance.db")
+        self.cursor = self.conn.cursor()
+
+        self.setup_database()
+        self.show_login_page()
+
+    def exit_app(self, event=None):
+        self.root.destroy()
+
+    def handle_enter_key(self, event=None):
+        self.verify_login()
+
+    def setup_database(self):
+        """ Creates tables if they don't exist """
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password TEXT
+            )
+        """)
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS students (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE
+            )
+        """)
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS attendance (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                date TEXT,
+                time TEXT
+            )
+        """)
+        self.conn.commit()
+
+        self.cursor.execute("SELECT * FROM admins WHERE username = 'admin'")
+        if not self.cursor.fetchone():
+            self.cursor.execute("INSERT INTO admins (username, password) VALUES ('admin', '1234')")
+            self.conn.commit()
+
+    def show_login_page(self):
+        """ Displays login page """
+        self.clear_root()
+
+        self.root.bind("<Return>", self.handle_enter_key)
+
+        self.header_label = tk.Label(self.root, text="Login", font=("Calibri", 35, "bold"), bg="#e85e38", fg="#ffffff")
+        self.header_label.place(relx=0.5, rely=0.2, anchor="center")
+
+        self.login_frame = tk.Frame(self.root, bg="#1e1f26")
+        self.login_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        tk.Label(self.login_frame, text="Username:", bg="#1e1f26", fg="white", font=("Arial", 14)).grid(row=0, column=0, padx=10, pady=10)
+        self.username_entry = tk.Entry(self.login_frame, font=("Arial", 14))
+        self.username_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(self.login_frame, text="Password:", bg="#1e1f26", fg="white", font=("Arial", 14)).grid(row=1, column=0, padx=10, pady=10)
+        self.password_entry = tk.Entry(self.login_frame, font=("Arial", 14), show="*")
+        self.password_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Button(self.login_frame, text="Login", command=self.verify_login, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=2, column=0, columnspan=2, pady=15)
+
+        tk.Button(self.root, text="Exit", command=self.exit_app, bg="#ff0000", fg="white", font=("Arial", 16)).place(relx=1, rely=0.0, anchor="ne")
+
+    def verify_login(self):
+        """ Verifies admin login """
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
+
+        self.cursor.execute("SELECT * FROM admins WHERE username = ? AND password = ?", (username, password))
+        user = self.cursor.fetchone()
+
+        if user:
+            messagebox.showinfo("Success", "Login successful!")
+            self.show_main_page()
+        else:
+            messagebox.showerror("Login Failed", "Invalid credentials!")
+
+    def show_main_page(self):
+        """ Displays the main attendance page """
+        self.clear_root()
+
+        self.header_label = tk.Label(self.root, text="Voice-Assisted Attendance", font=("Calibri", 35, "bold"), bg="#e85e38", fg="#ffffff")
+        self.header_label.place(relx=0.5, rely=0.0, anchor="n")
+
+        self.attendance_frame = tk.Frame(self.root, bg="#1e1f26")
+        self.attendance_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        tk.Button(self.attendance_frame, text="Mark Attendance (Voice)", command=self.mark_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=0, column=0, padx=20, pady=20)
+        tk.Button(self.attendance_frame, text="Add Student", command=self.show_add_student_page, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
+        
+        tk.Button(self.root, text="Logout", command=self.show_login_page, bg="#ff0000", fg="white", font=("Arial", 16)).place(relx=1, rely=0.0, anchor="ne")
+
+    def mark_attendance(self):
+        """ Uses voice recognition to mark attendance by detecting student names """
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            messagebox.showinfo("Speak Now", "Say your name clearly to mark attendance.")
+            print("Listening for name...")
+            try:
+                audio = recognizer.listen(source, timeout=5)
+                student_name = recognizer.recognize_google(audio).strip().title()  
+
+                self.cursor.execute("SELECT name FROM students WHERE name = ?", (student_name,))
+                student = self.cursor.fetchone()
+
+                if student:
+                    self.cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, DATE('now'), TIME('now'))", (student_name,))
+                    self.conn.commit()
+                    messagebox.showinfo("Success", f"Attendance marked for {student_name}!")
+                else:
+                    messagebox.showerror("Error", "Name not found in the system.")
+            except sr.UnknownValueError:
+                messagebox.showerror("Error", "Could not understand voice input.")
+            except sr.RequestError:
+                messagebox.showerror("Error", "Could not connect to voice recognition service.")
+
+    def show_add_student_page(self):
+        """ Displays a page to add new students """
+        self.clear_root()
+
+        self.header_label = tk.Label(self.root, text="Add Student", font=("Calibri", 35, "bold"), bg="#e85e38", fg="#ffffff")
+        self.header_label.place(relx=0.5, rely=0.0, anchor="n")
+
+        self.add_student_frame = tk.Frame(self.root, bg="#1e1f26")
+        self.add_student_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+        tk.Label(self.add_student_frame, text="Student Name:", bg="#1e1f26", fg="white", font=("Arial", 14)).grid(row=0, column=0, padx=10, pady=10)
+        self.student_name_entry = tk.Entry(self.add_student_frame, font=("Arial", 14))
+        self.student_name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Button(self.add_student_frame, text="Add Student", command=self.add_student, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=1, column=0, columnspan=2, pady=15)
+        tk.Button(self.add_student_frame, text="Back", command=self.show_main_page, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=2, column=0, columnspan=2, pady=10)
+
+    def add_student(self):
+        """ Adds a new student to the database """
+        student_name = self.student_name_entry.get().strip().title()
+
+        if not student_name:
+            messagebox.showerror("Input Error", "Please enter a valid name.")
+            return
+
         try:
-            messagebox.showinfo("Info", "Listening... Please speak your name.")
-            audio = recognizer.listen(source, timeout=5)
-            name = recognizer.recognize_google(audio)
-            record_attendance(name)
-        except sr.UnknownValueError:
-            messagebox.showerror("Error", "Could not understand the audio. Please try again.")
-        except sr.RequestError:
-            messagebox.showerror("Error", "Could not connect to the speech recognition service.")
-        except Exception as e:
-            messagebox.showerror("Error", f"An unexpected error occurred: {e}")
+            self.cursor.execute("INSERT INTO students (name) VALUES (?)", (student_name,))
+            self.conn.commit()
+            messagebox.showinfo("Success", f"{student_name} added successfully!")
+            self.show_main_page()
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "Student already exists.")
 
-# Generate Attendance Report
-def view_attendance():
-    conn = sqlite3.connect("attendance.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM attendance")
-    records = cursor.fetchall()
-    conn.close()
+    def clear_root(self):
+        """ Clears all widgets from the root window """
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-    report_window = tk.Toplevel(root)
-    report_window.title("Attendance Report")
-
-    tk.Label(report_window, text="ID", width=5).grid(row=0, column=0)
-    tk.Label(report_window, text="Name", width=20).grid(row=0, column=1)
-    tk.Label(report_window, text="Date", width=15).grid(row=0, column=2)
-    tk.Label(report_window, text="Time", width=15).grid(row=0, column=3)
-
-    for i, record in enumerate(records):
-        tk.Label(report_window, text=record[0], width=5).grid(row=i+1, column=0)
-        tk.Label(report_window, text=record[1], width=20).grid(row=i+1, column=1)
-        tk.Label(report_window, text=record[2], width=15).grid(row=i+1, column=2)
-        tk.Label(report_window, text=record[3], width=15).grid(row=i+1, column=3)
-
-# Main Application
-def clear_data():
-    conn = sqlite3.connect("attendance.db")
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM attendance")
-    conn.commit()
-    conn.close()
-    messagebox.showinfo("Success", "Attendance data cleared!")
-
-initialize_db()
-
-root = tk.Tk()
-root.title("Voice Assistant Attendance")
-root.geometry("400x300")
-
-tk.Label(root, text="Voice Assistant Attendance System", font=("Arial", 16)).pack(pady=10)
-
-tk.Button(root, text="Mark Attendance", command=recognize_voice, width=20).pack(pady=10)
-
-tk.Button(root, text="View Attendance", command=view_attendance, width=20).pack(pady=10)
-
-tk.Button(root, text="Clear Data", command=clear_data, width=20).pack(pady=10)
-
-tk.Button(root, text="Exit", command=root.quit, width=20).pack(pady=10)
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = VoiceAttendanceApp(root)
+    root.mainloop()
