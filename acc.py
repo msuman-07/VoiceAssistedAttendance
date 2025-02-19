@@ -1,6 +1,7 @@
 import sqlite3
 import tkinter as tk
 from tkinter import messagebox
+from PIL import Image, ImageTk
 
 def create_table():
     conn = sqlite3.connect("attendance.db")
@@ -13,15 +14,14 @@ def create_table():
     conn.commit()
     conn.close()
 
-
 def register_user():
-    username = entry_username.get()
-    password = entry_password.get()
+    username = entry_username.get().strip()
+    password = entry_password.get().strip()
     
     if not username or not password:
         messagebox.showerror("Error", "Please enter both username and password.")
         return
-    
+
     conn = sqlite3.connect("attendance.db")
     cursor = conn.cursor()
     try:
@@ -34,7 +34,7 @@ def register_user():
         conn.close()
 
 def remove_user():
-    username = entry_username.get()
+    username = entry_username.get().strip()
     
     if not username:
         messagebox.showerror("Error", "Please enter a username to remove.")
@@ -48,13 +48,13 @@ def remove_user():
     messagebox.showinfo("Success", "Admin removed successfully!")
 
 def update_password():
-    username = entry_username.get()
-    new_password = entry_password.get()
+    username = entry_username.get().strip()
+    new_password = entry_password.get().strip()
     
     if not username or not new_password:
         messagebox.showerror("Error", "Please enter both username and new password.")
         return
-    
+
     conn = sqlite3.connect("attendance.db")
     cursor = conn.cursor()
     cursor.execute("UPDATE admins SET password = ? WHERE username = ?", (new_password, username))
@@ -70,20 +70,31 @@ root.title("Admin Management")
 root.geometry("800x500")
 root.configure(bg="#f0f0f0")
 
+# Load Background Image
+bg_image = Image.open("media/accounts.jpg")
+bg_image = bg_image.resize((800, 500), Image.LANCZOS)
+bg_image = ImageTk.PhotoImage(bg_image)
+
+bg_label = tk.Label(root, image=bg_image)
+bg_label.place(relwidth=1, relheight=1)
+
+# Title
 title_label = tk.Label(root, text="Admin Management Portal for Attendance Marker", font=("Arial", 16, "bold"), bg="#f0f0f0")
 title_label.pack(pady=10)
 
+# Frame for Form
 frame = tk.Frame(root, bg="#ffffff", padx=20, pady=20)
 frame.pack(pady=20)
 
-tk.Label(frame, text="Username:", font=("Arial", 12)).grid(row=0, column=0, padx=10, pady=5, sticky="w")
-tk.Label(frame, text="Password:", font=("Arial", 12)).grid(row=1, column=0, padx=10, pady=5, sticky="w")
+tk.Label(frame, text="Username:", font=("Arial", 12), bg="#ffffff").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+tk.Label(frame, text="Password:", font=("Arial", 12), bg="#ffffff").grid(row=1, column=0, padx=10, pady=5, sticky="w")
 
 entry_username = tk.Entry(frame, font=("Arial", 12))
 entry_password = tk.Entry(frame, show="*", font=("Arial", 12))
 entry_username.grid(row=0, column=1, padx=10, pady=5, ipadx=10, ipady=5)
 entry_password.grid(row=1, column=1, padx=10, pady=5, ipadx=10, ipady=5)
 
+# Buttons
 button_frame = tk.Frame(root, bg="#f0f0f0")
 button_frame.pack(pady=10)
 

@@ -5,6 +5,7 @@ import sqlite3
 import speech_recognition as sr
 import pyttsx3
 from datetime import datetime
+from PIL import Image, ImageTk
 
 class VoiceAttendanceApp:
     def __init__(self, root):
@@ -69,6 +70,15 @@ class VoiceAttendanceApp:
 
         self.root.bind("<Return>", self.handle_enter_key)
 
+        bg_image = Image.open("media/login.jpg")
+        bg_image = bg_image.resize((self.root.winfo_screenwidth(), self.root.winfo_screenheight()), Image.LANCZOS)
+        bg_image = ImageTk.PhotoImage(bg_image)
+
+        self.canvas = tk.Canvas(self.root, width=self.root.winfo_screenwidth(), height=self.root.winfo_screenheight())
+        self.canvas.create_image(0, 0, image=bg_image, anchor="nw")
+        self.canvas.image = bg_image
+        self.canvas.pack(fill="both", expand=True)
+
         self.header_label = tk.Label(self.root, text="Login", font=("Calibri", 35, "bold"), bg="#e85e38", fg="#ffffff")
         self.header_label.place(relx=0.5, rely=0.2, anchor="center")
 
@@ -104,6 +114,15 @@ class VoiceAttendanceApp:
     def show_main_page(self):
         """ Displays the main attendance page """
         self.clear_root()
+
+        bg_image = Image.open("media/homepage.png")
+        bg_image = bg_image.resize((self.root.winfo_screenwidth(), self.root.winfo_screenheight()), Image.LANCZOS)
+        bg_image = ImageTk.PhotoImage(bg_image)
+
+        self.canvas = tk.Canvas(self.root, width=self.root.winfo_screenwidth(), height=self.root.winfo_screenheight())
+        self.canvas.create_image(0, 0, image=bg_image, anchor="nw")
+        self.canvas.image = bg_image
+        self.canvas.pack(fill="both", expand=True)
 
         self.header_label = tk.Label(self.root, text="Voice-Assisted Attendance", font=("Calibri", 35, "bold"), bg="#e85e38", fg="#ffffff")
         self.header_label.place(relx=0.5, rely=0.0, anchor="n")
