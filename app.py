@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
 import speech_recognition as sr
-import sys
+import pyttsx3
 from datetime import datetime
 
 class VoiceAttendanceApp:
@@ -17,9 +17,15 @@ class VoiceAttendanceApp:
 
         self.conn = sqlite3.connect("attendance.db")
         self.cursor = self.conn.cursor()
-
+        
+        self.speaker = pyttsx3.init()
+        
         self.setup_database()
         self.show_login_page()
+    
+    def speak(self, text):
+        self.speaker.say(text)
+        self.speaker.runAndWait()
 
     def exit_app(self, event=None):
         self.root.destroy()
@@ -131,6 +137,7 @@ class VoiceAttendanceApp:
                     self.cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)", 
                                         (student_name, current_date, current_time))
                     self.conn.commit()
+                    self.speak(f"Attendance marked for {student_name}!")
                     messagebox.showinfo("Success", f"Attendance marked for {student_name} at {current_time}!")
                 else:
                     messagebox.showerror("Error", f"{student_name} not found in the system.")
@@ -156,21 +163,21 @@ class VoiceAttendanceApp:
         tk.Button(self.add_student_frame, text="Add Student", command=self.add_student, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=1, column=0, columnspan=2, pady=15)
         tk.Button(self.add_student_frame, text="Back", command=self.show_main_page, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=2, column=0, columnspan=2, pady=10)
 
-    def add_student(self):
-        """ Adds a new student to the database """
-        student_name = self.student_name_entry.get().strip().title()
+    # def add_student(self):
+    #     """ Adds a new student to the database """
+    #     student_name = self.student_name_entry.get().strip().title()
 
-        if not student_name:
-            messagebox.showerror("Input Error", "Please enter a valid name.")
-            return
+    #     if not student_name:
+    #         messagebox.showerror("Input Error", "Please enter a valid name.")
+    #         return
 
-        try:
-            self.cursor.execute("INSERT INTO students (name) VALUES (?)", (student_name,))
-            self.conn.commit()
-            messagebox.showinfo("Success", f"{student_name} added successfully!")
-            self.show_main_page()
-        except sqlite3.IntegrityError:
-            messagebox.showerror("Error", "Student already exists.")
+    #     try:
+    #         self.cursor.execute("INSERT INTO students (name) VALUES (?)", (student_name,))
+    #         self.conn.commit()
+    #         messagebox.showinfo("Success", f"{student_name} added successfully!")
+    #         self.show_main_page()
+    #     except sqlite3.IntegrityError:
+    #         messagebox.showerror("Error", "Student already exists.")
     
     def view_attendance(self):
         self.clear_root()
