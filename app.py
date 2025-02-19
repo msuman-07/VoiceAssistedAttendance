@@ -131,8 +131,7 @@ class VoiceAttendanceApp:
         self.attendance_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         tk.Button(self.attendance_frame, text="Mark Attendance (Voice)", command=self.mark_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=0, column=0, padx=20, pady=20)
-        tk.Button(self.attendance_frame, text="Add Student", command=self.show_add_student_page, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
-        tk.Button(self.attendance_frame, text="View Attendance", command=self.view_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=2, column=0, padx=20, pady=20)
+        tk.Button(self.attendance_frame, text="View Attendance", command=self.view_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
         
         tk.Button(self.root, text="Logout", command=self.show_login_page, bg="#ff0000", fg="white", font=("Arial", 16)).place(relx=1, rely=0.0, anchor="ne")
 
