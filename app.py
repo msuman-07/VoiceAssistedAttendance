@@ -4,7 +4,7 @@ from tkinter import messagebox
 import sqlite3
 import speech_recognition as sr
 import sys
-import datetime
+from datetime import datetime
 
 class VoiceAttendanceApp:
     def __init__(self, root):
@@ -107,7 +107,7 @@ class VoiceAttendanceApp:
 
         tk.Button(self.attendance_frame, text="Mark Attendance (Voice)", command=self.mark_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=0, column=0, padx=20, pady=20)
         tk.Button(self.attendance_frame, text="Add Student", command=self.show_add_student_page, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
-        tk.Button(self.attendance_frame, text="View Attendance", command=self.view_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
+        tk.Button(self.attendance_frame, text="View Attendance", command=self.view_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=2, column=0, padx=20, pady=20)
         
         tk.Button(self.root, text="Logout", command=self.show_login_page, bg="#ff0000", fg="white", font=("Arial", 16)).place(relx=1, rely=0.0, anchor="ne")
 
@@ -126,14 +126,14 @@ class VoiceAttendanceApp:
 
                 if student:
                     current_date = datetime.now().strftime("%Y-%m-%d")
-                    current_time = datetime.now().strftime("%H:%M:%S")  # Get system time
+                    current_time = datetime.now().strftime("%H:%M:%S")
 
                     self.cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)", 
                                         (student_name, current_date, current_time))
                     self.conn.commit()
                     messagebox.showinfo("Success", f"Attendance marked for {student_name} at {current_time}!")
                 else:
-                    messagebox.showerror("Error", "Name not found in the system.")
+                    messagebox.showerror("Error", f"{student_name} not found in the system.")
             except sr.UnknownValueError:
                 messagebox.showerror("Error", "Could not understand voice input.")
             except sr.RequestError:
