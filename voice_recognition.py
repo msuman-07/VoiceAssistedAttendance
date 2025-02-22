@@ -47,7 +47,7 @@ def markattendance():
 
     if student_name == "Unknown":
         print("Voice not recognized. Please try again.")
-        return
+        return "Unknown"
 
     conn = sqlite3.connect("attendance.db")
     cursor = conn.cursor()

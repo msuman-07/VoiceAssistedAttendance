@@ -140,7 +140,10 @@ class VoiceAttendanceApp:
         tk.Button(self.add_student_frame, text="Back", command=self.show_main_page, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=2, column=0, columnspan=2, pady=10)
 
     def mark_attendance(self):
-        markattendance()
+        student = markattendance()
+        if not student == "Unknown":
+            self.speak(f"Attendance marked for {student}")
+            messagebox.showinfo("Success", f"Attendance marked for {student}")
 
     def view_attendance(self):
         self.clear_root()
