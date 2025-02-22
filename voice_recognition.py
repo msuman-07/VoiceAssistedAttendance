@@ -16,7 +16,7 @@ def extract_features_from_audio(audio_file):
     mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
     return np.mean(mfccs.T, axis=0).reshape(1, -1)
 
-def record_audio(file_path="temp_audio.wav", duration=3):
+def record_audio(file_path="temp_audio.wav", duration=5):
     """Record live audio from microphone"""
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
@@ -41,7 +41,7 @@ def identify_speaker():
     else:
         return "Unknown"
 
-def mark_attendance():
+def markattendance():
     """Mark attendance for identified speaker"""
     student_name = identify_speaker()
 
@@ -61,6 +61,4 @@ def mark_attendance():
     conn.close()
 
     print(f"Attendance marked for {student_name} at {time}.")
-
-# Run attendance marking system
-mark_attendance()
+    return student_name

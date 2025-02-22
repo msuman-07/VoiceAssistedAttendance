@@ -6,6 +6,7 @@ import speech_recognition as sr
 import pyttsx3
 from datetime import datetime
 from PIL import Image, ImageTk
+from voice_recognition import markattendance
 
 class VoiceAttendanceApp:
     def __init__(self, root):
@@ -41,20 +42,6 @@ class VoiceAttendanceApp:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT
-            )
-        """)
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS students (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE
-            )
-        """)
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS attendance (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                date TEXT,
-                time TEXT
             )
         """)
         self.conn.commit()
@@ -134,35 +121,6 @@ class VoiceAttendanceApp:
         tk.Button(self.attendance_frame, text="View Attendance", command=self.view_attendance, bg="#3c91e6", fg="white", font=("Arial", 16)).grid(row=1, column=0, padx=20, pady=20)
         
         tk.Button(self.root, text="Logout", command=self.show_login_page, bg="#ff0000", fg="white", font=("Arial", 16)).place(relx=1, rely=0.0, anchor="ne")
-
-    def mark_attendance(self):
-        """ Uses voice recognition to mark attendance by detecting student names """
-        recognizer = sr.Recognizer()
-        with sr.Microphone() as source:
-            messagebox.showinfo("Speak Now", "Say your name clearly to mark attendance.")
-            print("Listening for name...")
-            try:
-                audio = recognizer.listen(source, timeout=5)
-                student_name = recognizer.recognize_google(audio).strip().title()  
-
-                self.cursor.execute("SELECT name FROM students WHERE name = ?", (student_name,))
-                student = self.cursor.fetchone()
-
-                if student:
-                    current_date = datetime.now().strftime("%Y-%m-%d")
-                    current_time = datetime.now().strftime("%H:%M:%S")
-
-                    self.cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)", 
-                                        (student_name, current_date, current_time))
-                    self.conn.commit()
-                    self.speak(f"Attendance marked for {student_name}!")
-                    messagebox.showinfo("Success", f"Attendance marked for {student_name} at {current_time}!")
-                else:
-                    messagebox.showerror("Error", f"{student_name} not found in the system.")
-            except sr.UnknownValueError:
-                messagebox.showerror("Error", "Could not understand voice input.")
-            except sr.RequestError:
-                messagebox.showerror("Error", "Could not connect to voice recognition service.")
         
     def show_add_student_page(self):
         """ Displays a page to add new students """
@@ -181,22 +139,9 @@ class VoiceAttendanceApp:
         tk.Button(self.add_student_frame, text="Add Student", command=self.add_student, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=1, column=0, columnspan=2, pady=15)
         tk.Button(self.add_student_frame, text="Back", command=self.show_main_page, bg="#3c91e6", fg="white", font=("Arial", 14)).grid(row=2, column=0, columnspan=2, pady=10)
 
-    # def add_student(self):
-    #     """ Adds a new student to the database """
-    #     student_name = self.student_name_entry.get().strip().title()
+    def mark_attendance(self):
+        markattendance()
 
-    #     if not student_name:
-    #         messagebox.showerror("Input Error", "Please enter a valid name.")
-    #         return
-
-    #     try:
-    #         self.cursor.execute("INSERT INTO students (name) VALUES (?)", (student_name,))
-    #         self.conn.commit()
-    #         messagebox.showinfo("Success", f"{student_name} added successfully!")
-    #         self.show_main_page()
-    #     except sqlite3.IntegrityError:
-    #         messagebox.showerror("Error", "Student already exists.")
-    
     def view_attendance(self):
         self.clear_root()
 
